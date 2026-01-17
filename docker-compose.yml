@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Ollama - Local LLM Server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-movie-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - ai-movie-net
+
+  # Stable Diffusion WebUI - Image Generation
+  stable-diffusion:
+    image: stability-ai/stable-diffusion-webui:latest
+    container_name: ai-movie-sd
+    ports:
+      - "7860:7860"
+    volumes:
+      - sd_models:/models
+      - sd_outputs:/outputs
+    environment:
+      - COMMANDLINE_ARGS=--api --listen
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - ai-movie-net
+
+volumes:
+  ollama_data:
+    driver: local
+  sd_models:
+    driver: local
+  sd_outputs:
+    driver: local
+
+networks:
+  ai-movie-net:
+    driver: bridge
